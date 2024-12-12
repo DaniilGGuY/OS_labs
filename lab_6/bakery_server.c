@@ -19,40 +19,27 @@ int number_array[MAX_CLIENTS] = {0};
 
 pthread_mutex_t id_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-int next_id = 0;
-
-int get_thread_id() {
-    //pthread_mutex_lock(&id_mutex);
-    if (next_id >= MAX_CLIENTS)
-        next_id = 0;
-    int id = next_id++;
-    //pthread_mutex_unlock(&id_mutex);
-    return id;
-}
-
-void bakery_lock(int i) {
-    choosing[i] = 1;
-    int max = 0;
-    for (int j = 0; j < MAX_CLIENTS; ++j)
-        if (number_array[j] > max)
-            max = number_array[j];
-
-    number_array[i] = max + 1;
-    choosing[i] = 0;
-}
-
-void bakery_unlock(int i) {
-    number_array[i] = 0;
-}
+int counter = 0;
 
 int *
 get_number_1_svc(void *argp, struct svc_req *rqstp)
 {
 	static int result;
-    int id = get_thread_id();
-    bakery_lock(id);
-    result = number_array[id];
+    
+	if (counter >= MAX_CLIENTS)
+        counter = 0;
+
+	choosing[counter] = 1;
+    int max = 0;
+    for (int j = 0; j < MAX_CLIENTS; ++j)
+        if (number_array[j] > max)
+            max = number_array[j];
+    number_array[counter] = ++max;
+    choosing[counter] = 0;
+
+    result = number_array[counter];
     printf("Присвоен номер клиента: %d\n", result);
+    ++counter;
 	return &result;
 }
 
@@ -68,16 +55,16 @@ bakery_service_1_svc(struct REQUEST *argp, struct svc_req *rqstp)
         while (number_array[j] != 0 && (number_array[j] < number_array[id] || (number_array[j] == number_array[id] && j < id)));
     }
     switch (argp->operation) {
-        case 'a':
+        case '+':
             result = argp->arg1 + argp->arg2;
             break;
-        case 'b':
+        case '-':
             result = argp->arg1 - argp->arg2;
             break;
-        case 'c':
+        case '*':
             result = argp->arg1 * argp->arg2;
             break;
-        case 'd':
+        case '/':
             if(argp->arg2 != 0)
                 result = argp->arg1 / argp->arg2;
             else {

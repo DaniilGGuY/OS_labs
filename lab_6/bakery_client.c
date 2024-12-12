@@ -45,6 +45,7 @@ bakery_prog_1(char *host)
 #endif	/* DEBUG */
 
 	while (1) {
+		sleep(rand() % 2 + 1);
         memset(&req, 0, sizeof(req));
         number = get_number_1((void *)get_number_1_arg, clnt);
         if (number == (int *) NULL) {
@@ -52,26 +53,21 @@ bakery_prog_1(char *host)
 		}
         req.number = *number;
         printf("Новый клиент получил номер %d\n", req.number);
-
-        req.arg1 = ((float)(rand() % 1000)) / 10.0; 
-        req.arg2 = ((float)(rand() % 1000)) / 10.0; 
-        req.operation = (char)(rand() % 4 + 'a'); 
-
+        req.arg1 = ((double)(rand() % 1000)) / 10.0; 
+        req.arg2 = ((double)(rand() % 1000)) / 10.0; 
+		req.operation = get_operation_char((char)(rand() % 4 + 'a'));
         if(req.operation == 'd' && req.arg2 == 0.0) {
-            req.arg2 = ((float)(rand() % 1000)) / 10.0;
+            req.arg2 = ((double)(rand() % 1000)) / 10.0;
             if (req.arg2 == 0.0) req.arg2 = 1.0; 
         }
 
+		sleep(rand() % 1);
         result = bakery_service_1(&req, clnt);
         if (result == (double*) NULL) {
             clnt_perror (clnt, "call failed");
         }
 
-        char op_char = get_operation_char(req.operation);
-
-        printf("%.2f %c %.2f = %.2f\n", req.arg1, op_char, req.arg2, result);
-
-        sleep(rand() % 3 + 1);
+        printf("%.2f %c %.2f = %.2f\n", req.arg1, req.operation, req.arg2, *result);
     }
 
 #ifndef	DEBUG
