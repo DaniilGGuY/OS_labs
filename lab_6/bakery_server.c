@@ -17,8 +17,6 @@
 bool choosing[MAX_CLIENTS] = {0};
 int number_array[MAX_CLIENTS] = {0};
 
-pthread_mutex_t id_mutex = PTHREAD_MUTEX_INITIALIZER;
-
 int counter = 0;
 
 int *
