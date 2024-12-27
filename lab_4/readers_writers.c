@@ -15,27 +15,30 @@
 #define SLEEP_TIMEW      3
 #define SLEEP_TIMER      3
 // Семафоры
-#define ACTIVE_READERS   0	
-#define WRITERS_QUEUE    1
-#define ACTIVE_WRITERS   2
-#define READERS_QUEUE    3
+#define NUMB_OF_READERS   0	
+#define WRITERS_QUEUE     1
+#define ACTIVE_WRITER     2
+#define READERS_QUEUE     3
+#define BIN_SEM           4
 // Операции
 #define P               -1
 #define V                1
 
 int flag = 1;
 
-struct sembuf start_read[4] = { { READERS_QUEUE, V, 0 }, 
+struct sembuf start_read[5] = { { READERS_QUEUE, V, 0 }, 
 								{ WRITERS_QUEUE,  0, 0 }, 
-								{ ACTIVE_WRITERS,  0, 0 }, 
-								{ ACTIVE_READERS,  V, 0 } };
-struct sembuf stop_read[1]	= { { ACTIVE_READERS, P, 0 } };  
+								{ ACTIVE_WRITER,  0, 0 }, 
+								{ NUMB_OF_READERS,  V, 0 },
+                                { READERS_QUEUE, P, 0} };
+struct sembuf stop_read[1]	= { { NUMB_OF_READERS, P, 0 } };  
 struct sembuf start_write[5] = { { WRITERS_QUEUE,  V, 0 }, 
-								 { ACTIVE_WRITERS, 0, 0 }, 
-								 { ACTIVE_READERS,  0, 0 }, 
+								 { NUMB_OF_READERS,  0, 0 }, 
+                                 { BIN_SEM, P, 0 }, 
 								 { WRITERS_QUEUE, P, 0 }, 
-								 { ACTIVE_WRITERS,  V, 0 } };      
-struct sembuf stop_write[1]  = { { ACTIVE_WRITERS,  P, 0 } };
+								 { ACTIVE_WRITER,  V, 0 } };  
+                                     
+struct sembuf stop_write[2]  = { { ACTIVE_WRITER,  P, 0 }, { BIN_SEM, V, 0 } };
 
 int signal_handler(int sig_numb) {
     printf("PID %d signal %d\n", getpid(), sig_numb);
@@ -58,7 +61,7 @@ void writer(char *addr, const int semid) {
 			*addr = 'a';
         printf("%d write %c\n", getpid(), *addr);
 
-        int semop_V = semop(semid, stop_write, 1);
+        int semop_V = semop(semid, stop_write, 2);
         if (semop_V == -1) {
             printf("PID %d blocked", getpid());
             perror("semop");
@@ -71,7 +74,7 @@ void reader(char *addr, const int semid) {
     srand(getpid());
     while (flag) {
         sleep(rand() % SLEEP_TIMER);
-        int semop_P = semop(semid, start_read, 4);
+        int semop_P = semop(semid, start_read, 5);
         if (semop_P == -1) {
             printf("PID %d blocked", getpid());
             perror("semop");
@@ -119,11 +122,12 @@ int main(void)
 	
 	*addr = 'a' - 1;
 
-	int ar_sem = semctl(semid, ACTIVE_READERS, SETVAL, 0);
+	int ar_sem = semctl(semid, NUMB_OF_READERS, SETVAL, 0);
 	int w_queue = semctl(semid, WRITERS_QUEUE, SETVAL, 0);
-	int aw_sem = semctl(semid, ACTIVE_WRITERS, SETVAL, 0);
+	int aw_sem = semctl(semid, ACTIVE_WRITER, SETVAL, 0);
     int r_queue = semctl(semid, READERS_QUEUE, SETVAL, 0);
-    if (ar_sem == -1 || w_queue == -1 || aw_sem == -1 || r_queue == -1) {
+    int bin_sem = semctl(semid, BIN_SEM, SETVAL, 1);
+    if (ar_sem == -1 || w_queue == -1 || aw_sem == -1 || r_queue == -1 || bin_sem == -1) {
         perror("semctl");
         exit(1);
     }

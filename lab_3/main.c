@@ -134,7 +134,6 @@ void reread(void)
         fclose(fd);
         syslog(LOG_INFO, "User Name: %s.", name_buf);
         syslog(LOG_INFO, "User ID: %d", uid);
-        syslog(LOG_INFO, "Process ID: %d", pid);
     }
 }
 
@@ -193,13 +192,15 @@ int main(int argc, char *argv[])
     /*
     * Восстановить действия по умолчанию для сигнала SIGHUP и заблокировать все сигналы
     */
-    sa.sa_handler = SIG_DFL;
-    sigemptyset(&sa.sa_mask);
+    sa.sa_handler = SIG_DFL; 
+    sigemptyset(&sa.sa_mask); // инициализирует набор сигналов, указанный в set, и "очищает" его от всех сигналов
     sa.sa_flags = 0;
+    // sigaction определяет особое поведение для сигнала sighup
     if (sigaction(SIGHUP, &sa, NULL) < 0)
         printf("невозможно восстановить действие SIG_DFL для SIGHUP");
-    sigfillset(&mask);
-    if ((err = pthread_sigmask(SIG_BLOCK, &mask, NULL)) != 0)
+    sigfillset(&mask); // полностью инициализирует набор set, в котором содержатся все сигналы
+    // Изменить маску сигналов потока. SIG_BLOCK - формирует результирующую маску сигналов объединением текущей маски сигнала и набора сигналов mask. 
+    if ((err = pthread_sigmask(SIG_BLOCK, &mask, NULL)) != 0) 
         syslog(LOG_ERR, "ошибка выполнения операции SIG_BLOCK");
     
     /*
