@@ -46,7 +46,6 @@ void start_write()
 
 void stop_write()
 {
-    ResetEvent(may_write);
     active_writer = false;
     if (WaitForSingleObject(may_read, 0) == WAIT_OBJECT_0)
         SetEvent(may_read);
