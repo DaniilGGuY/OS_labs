@@ -16,7 +16,7 @@ HANDLE mutex;
 int active_readers = 0;
 bool active_writer = false;
 
-char alpha = 'a' - 1;
+char alpha = 'a';
 
 void start_read()
 {
@@ -46,7 +46,6 @@ void start_write()
 
 void stop_write()
 {
-    //ResetEvent(may_write);
     active_writer = false;
     if (WaitForSingleObject(may_read, 0) == WAIT_OBJECT_0)
         SetEvent(may_read);
