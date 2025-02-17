@@ -6,48 +6,41 @@
 
 #define READERS        5
 #define WRITERS        3
-#define SLEEP_TW    3000
+#define SLEEP_TW    3500
 #define SLEEP_TR    3000
 
 HANDLE may_read;
 HANDLE may_write;
-HANDLE mutex;
 
-int active_readers = 0;
-bool active_writer = false;
+int readers_queue = 0;
 
 char alpha = 'a';
 
 void start_read()
 {
-    if (active_writer || WaitForSingleObject(may_write, 0) == WAIT_OBJECT_0)
+    ++readers_queue;
+    if (WaitForSingleObject(may_write, 0) == WAIT_OBJECT_0)
         WaitForSingleObject(may_read, INFINITE);
-    WaitForSingleObject(mutex, INFINITE);
     SetEvent(may_read);
-    ++active_readers;
-    ReleaseMutex(mutex);
 }
 
 void stop_read()
 {
-    --active_readers;
-    if (active_readers == 0)
+    --readers_queue;
+    if (readers_queue == 0)
         SetEvent(may_write);
 }
 
 void start_write()
 {
-    if (active_writer || active_readers > 0)
+    if (readers_queue > 0)
         WaitForSingleObject(may_write, INFINITE);
-    WaitForSingleObject(mutex, INFINITE);
-    active_writer = true;
-    ReleaseMutex(mutex);
 }
 
 void stop_write()
 {
-    active_writer = false;
-    if (WaitForSingleObject(may_read, 0) == WAIT_OBJECT_0)
+    ResetEvent(may_write);
+    if (readers_queue > 0)
         SetEvent(may_read);
     else
         SetEvent(may_write);
@@ -94,10 +87,6 @@ int main(void)
         perror("CreateEvent()");
         ExitProcess(EXIT_FAILURE);
     }
-    if ((mutex = CreateMutex(NULL, 0, NULL)) == NULL) {
-        perror("CreateMutex()");
-        ExitProcess(EXIT_FAILURE);
-    }
 
     for (int i = 0; i < WRITERS; ++i)
     {
@@ -140,7 +129,6 @@ int main(void)
 
     CloseHandle(may_read);
     CloseHandle(may_write);
-    CloseHandle(mutex);
 
     ExitProcess(EXIT_SUCCESS);
 }
