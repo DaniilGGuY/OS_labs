@@ -11,7 +11,7 @@
 
 #include "calc.h"
 
-#define NAME     "server.socket"
+#define NAME     "socket.socket"
 #define LEN                  20
 
 bool flag = 1;

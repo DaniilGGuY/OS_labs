@@ -7,11 +7,13 @@
 #include <string.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <math.h>
 
 #include "calc.h"
 
-#define NAME     "server.socket"
+#define NAME     "socket.socket"
 #define LEN                  20
+#define EPS                1e-9
 
 bool flag = 1;
 
@@ -29,7 +31,15 @@ double process(struct calc_t *calc) {
         case '*':
             return calc->a * calc->b;
         case '/':
+            if (fabs(calc->b) <= EPS)
+            {
+                printf("Деление на 0");
+                exit(EXIT_FAILURE);
+            }
             return calc->a / calc->b;
+        default:
+            printf("Неизвестная операция");
+            exit(EXIT_FAILURE);
     }
 }
 
